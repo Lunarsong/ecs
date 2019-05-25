@@ -132,6 +132,13 @@ void IterateHelper(StorageTuple storages, Fn fn, void* ptr) {
   }
 }
 
+template <typename Component, typename ComponentsTuple>
+void IsComponentMissingHelper(ComponentsTuple components, bool& has_all) {
+  if (std::get<Component*>(components) == nullptr) {
+    has_all = false;
+  }
+}
+
 template <typename... Components, typename Fn,
           typename std::enable_if<1 != sizeof...(Components), int>::type>
 void Manager::ForEach(Fn fn) {
@@ -143,18 +150,27 @@ void Manager::ForEach(Fn fn) {
   size_t size = -1;
   void* ptr = nullptr;
   int find_smallest_expansion[] = {
-      (FindSmallestHelper<Components>(storages, size, &ptr), size, 0)...};
+      (FindSmallestHelper<Components>(storages, size, &ptr), 0)...};
   (void)find_smallest_expansion;
 
   // Helper lambda to expand tuple variables.
   auto iter_impl = [&](Entity e) {
     auto entities = std::make_tuple(GetPool<Components>()->Get(e)...);
-    apply_from_tuple(e, fn, entities);
+    bool has_all_components = true;
+
+    int component_missing_expansion[] = {
+        (IsComponentMissingHelper<Components>(entities, has_all_components),
+         0)...};
+    (void)component_missing_expansion;
+
+    if (has_all_components) {
+      apply_from_tuple(e, fn, entities);
+    }
   };
 
   // Iterate all entities in the smallest storage and call the helper lambda.
   int iterate_expansion[] = {
-      (IterateHelper<Components>(storages, iter_impl, ptr), size, 0)...};
+      (IterateHelper<Components>(storages, iter_impl, ptr), 0)...};
   (void)iterate_expansion;
 }
 

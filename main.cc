@@ -26,9 +26,11 @@ void main() {
 
   Entity e0 = manager.Create();
   Entity e1 = manager.Create();
+  Entity e3 = manager.Create();
 
   manager.Assign<Name>(e0, "Test");
   manager.Assign<Name>(e1, "Other Test");
+  manager.Assign<Name>(e3, "Only Name");
 
   manager.Assign<Position>(e0, 25.0f, 50.0f, 100.0f);
   manager.Assign<Position>(e1, 2.0f, 8.0f, 16.0f);
