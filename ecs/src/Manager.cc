@@ -5,9 +5,6 @@
 namespace ecs {
 size_t Manager::families_counter_ = 0;
 
-void DummyVoidFn() {}
-void DummyEntityFn(Entity) {}
-
 Manager::~Manager() {
   size_t idx = 0;
   for (auto it : pool_destroy_) {

@@ -23,9 +23,10 @@ class Manager {
   template <typename Component>
   void Remove(Entity entity);
 
-  /*template <typename Component, typename Fn>
-  void ForEach(Fn fn);*/
-  template <typename... Components, typename Fn>
+  template <typename Component, typename Fn>
+  void ForEach(Fn fn);
+  template <typename... Components, typename Fn,
+            typename std::enable_if<1 != sizeof...(Components), int>::type = 0>
   void ForEach(Fn fn);
 
  private:
@@ -44,23 +45,6 @@ class Manager {
 
   template <typename Component>
   ComponentStorage<Component>* GetPool();
-  template <typename Component>
-  void FindSmallestHelper(size_t& size, void** ptr) {
-    auto* pool = GetPool<Component>();
-    if (pool->Size() < size) {
-      *ptr = pool;
-      size = pool->Size();
-    }
-  }
-  template <typename Component, typename Fn>
-  void IterateHelper(Fn fn, void* ptr) {
-    auto* pool = GetPool<Component>();
-    if (pool == ptr) {
-      for (auto it = pool->begin(); it != pool->end(); ++it) {
-        fn(it.GetEntity());
-      }
-    }
-  }
 };
 
 template <typename Component, typename... Args>
@@ -100,18 +84,19 @@ ComponentStorage<Component>* Manager::GetPool() {
       component_pools_[family]);
 }
 
-/*template <typename Component, typename Fn>
+template <typename Component, typename Fn>
 void Manager::ForEach(Fn fn) {
   auto& pool = *GetPool<Component>();
   for (ComponentStorage<Component>::Iterator it = pool.begin();
        it != pool.end(); ++it) {
     fn(it.GetEntity(), *it);
   }
-}*/
+}
+
 template <typename F, typename Tuple, size_t... S>
 decltype(auto) apply_tuple_impl(Entity e, F&& fn, Tuple&& t,
                                 std::index_sequence<S...>) {
-  return std::forward<F>(fn)(e, std::get<S>(std::forward<Tuple>(t))...);
+  return std::forward<F>(fn)(e, *std::get<S>(std::forward<Tuple>(t))...);
 }
 template <typename F, typename Tuple>
 decltype(auto) apply_from_tuple(Entity e, F&& fn, Tuple&& t) {
@@ -121,23 +106,49 @@ decltype(auto) apply_from_tuple(Entity e, F&& fn, Tuple&& t) {
                           std::make_index_sequence<tSize>());
 }
 
-template <typename... Components, typename Fn>
+template <typename Component, typename StorageTuple>
+void FindSmallestHelper(StorageTuple storages, size_t& size, void** ptr) {
+  auto* pool = std::get<ComponentStorage<Component>*>(storages);
+  if (pool->Size() < size) {
+    *ptr = pool;
+    size = pool->Size();
+  }
+}
+
+template <typename Component, typename Fn, typename StorageTuple>
+void IterateHelper(StorageTuple storages, Fn fn, void* ptr) {
+  auto* pool = std::get<ComponentStorage<Component>*>(storages);
+  if (pool == ptr) {
+    for (auto it = pool->begin(); it != pool->end(); ++it) {
+      fn(it.GetEntity());
+    }
+  }
+}
+
+template <typename... Components, typename Fn,
+          typename std::enable_if<1 != sizeof...(Components), int>::type>
 void Manager::ForEach(Fn fn) {
+  // Create a tuple containing the component storage(s) of the requested
+  // components.
+  auto storages = std::make_tuple(GetPool<Components>()...);
+
+  // Find the component storage with the fewest entities to use for iteration.
   size_t size = -1;
   void* ptr = nullptr;
-  int dummy[] = {(FindSmallestHelper<Components>(size, &ptr), size, 0)...};
-  (void)dummy;
+  int find_smallest_expansion[] = {
+      (FindSmallestHelper<Components>(storages, size, &ptr), size, 0)...};
+  (void)find_smallest_expansion;
 
-  // Todo: save some performance by retrieving components from 'storages'
-  // instead of GetPool.
-  // auto storages = std::make_tuple(GetPool<Components>()...);
-
+  // Helper lambda to expand tuple variables.
   auto iter_impl = [&](Entity e) {
-    auto entities = std::make_tuple(*GetPool<Components>()->Get(e)...);
+    auto entities = std::make_tuple(GetPool<Components>()->Get(e)...);
     apply_from_tuple(e, fn, entities);
   };
-  int dummy2[] = {(IterateHelper<Components>(iter_impl, ptr), size, 0)...};
-  (void)dummy2;
+
+  // Iterate all entities in the smallest storage and call the helper lambda.
+  int iterate_expansion[] = {
+      (IterateHelper<Components>(storages, iter_impl, ptr), size, 0)...};
+  (void)iterate_expansion;
 }
 
 }  // namespace ecs

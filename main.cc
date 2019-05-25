@@ -57,6 +57,7 @@ void main() {
                                      auto& position) {
     std::cout << entity.Handle().id << ": " << name.name << ", " << position.x
               << ", " << position.y << ", " << position.z << "\n";
+    name.name = "Meh";
   });
   std::cout << "\n";
 }
