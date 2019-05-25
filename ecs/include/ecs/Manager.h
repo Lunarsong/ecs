@@ -156,13 +156,15 @@ void Manager::ForEach(Fn fn) {
   // Helper lambda to expand tuple variables.
   auto iter_impl = [&](Entity e) {
     auto entities = std::make_tuple(GetPool<Components>()->Get(e)...);
-    bool has_all_components = true;
 
+    // Verify all components are present.
+    bool has_all_components = true;
     int component_missing_expansion[] = {
         (IsComponentMissingHelper<Components>(entities, has_all_components),
          0)...};
     (void)component_missing_expansion;
 
+    // Invoke user function.
     if (has_all_components) {
       apply_from_tuple(e, fn, entities);
     }
