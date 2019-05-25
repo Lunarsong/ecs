@@ -14,6 +14,7 @@ class Entity {
   ecs::Handle handle_;
 
   friend class Manager;
+  Entity(ecs::Handle handle) : handle_(handle) {}
 };
 
 }  // namespace ecs

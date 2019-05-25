@@ -1,5 +1,6 @@
 #pragma once
 
+#include <queue>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -15,6 +16,7 @@ class Manager {
 
   Entity Create();
   void Destroy(Entity entity);
+  bool IsAlive(Entity entity) const;
 
   template <typename Component, typename... Args>
   Component& Assign(Entity entity, Args&&... args);
@@ -30,6 +32,11 @@ class Manager {
   void ForEach(Fn fn);
 
  private:
+  // Handle generation.
+  std::queue<HandleType> free_indices_;
+  std::vector<uint8_t> generations_;
+
+  // Components.
   using VoidFn = void (*)(void*);
   using EntityFn = void (*)(void*, Entity);
   std::vector<void*> component_pools_;
