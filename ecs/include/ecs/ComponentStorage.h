@@ -71,7 +71,7 @@ template <typename Component>
 Component& ComponentStorage<Component>::Assign(Entity entity,
                                                Component&& component) {
   Assure(entity);
-  const size_t entity_index = entity.Handle().Index();
+  const size_t entity_index = entity.Index();
 
   ArrayIndex packed_index = sparse_to_packed_[entity_index];
   if (packed_index == kInvalidIndex) {
@@ -89,7 +89,7 @@ template <typename Component>
 template <typename... Args>
 Component& ComponentStorage<Component>::Assign(Entity entity, Args&&... args) {
   Assure(entity);
-  const size_t entity_index = entity.Handle().Index();
+  const size_t entity_index = entity.Index();
 
   ArrayIndex packed_index = sparse_to_packed_[entity_index];
   if (packed_index == kInvalidIndex) {
@@ -105,8 +105,8 @@ Component& ComponentStorage<Component>::Assign(Entity entity, Args&&... args) {
 
 template <typename Component>
 void ComponentStorage<Component>::Remove(Entity entity) {
-  const size_t entity_index = entity.Handle().Index();
-  if (entity.Handle().Index() < sparse_to_packed_.size()) {
+  const size_t entity_index = entity.Index();
+  if (entity.Index() < sparse_to_packed_.size()) {
     return;
   }
 
@@ -117,7 +117,7 @@ void ComponentStorage<Component>::Remove(Entity entity) {
   const size_t last_index = packed_.size() - 1;
   const Entity last_entity = packed_to_sparse_[last_index];
   sparse_to_packed_[entity_index] = kInvalidIndex;
-  sparse_to_packed_[last_entity.Handle().Index()] = packed_index;
+  sparse_to_packed_[last_entity.Index()] = packed_index;
   std::swap(packed_[packed_index], packed_[last_index]);
   packed_.pop_back();
   std::swap(packed_to_sparse_[packed_index], packed_to_sparse_[last_index]);
@@ -126,7 +126,7 @@ void ComponentStorage<Component>::Remove(Entity entity) {
 
 template <typename Component>
 void ComponentStorage<Component>::Assure(Entity entity) {
-  const size_t entity_index = entity.Handle().Index();
+  const size_t entity_index = entity.Index();
   if (sparse_to_packed_.size() <= entity_index) {
     sparse_to_packed_.resize(entity_index + 1, kInvalidIndex);
   }
@@ -135,7 +135,7 @@ void ComponentStorage<Component>::Assure(Entity entity) {
 template <typename Component>
 Component* ComponentStorage<Component>::Get(Entity entity) {
   if (Has(entity)) {
-    const size_t entity_index = entity.Handle().Index();
+    const size_t entity_index = entity.Index();
     return &packed_[sparse_to_packed_[entity_index]];
   }
   return nullptr;
@@ -143,7 +143,7 @@ Component* ComponentStorage<Component>::Get(Entity entity) {
 
 template <typename Component>
 bool ComponentStorage<Component>::Has(Entity entity) {
-  const size_t entity_index = entity.Handle().Index();
+  const size_t entity_index = entity.Index();
   return (entity_index < sparse_to_packed_.size() &&
           sparse_to_packed_[entity_index] != kInvalidIndex);
 }

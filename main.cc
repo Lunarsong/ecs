@@ -50,15 +50,15 @@ void main() {
   // ForEach:
   std::cout << "ForEach: \n";
   manager.ForEach<Name>([](Entity entity, auto& name) {
-    std::cout << entity.Handle().id << ": " << name.name << "\n";
+    std::cout << entity.Id() << ": " << name.name << "\n";
   });
   std::cout << "\n";
 
   std::cout << "ForEach (Multiple): \n";
-  manager.ForEach<Name, Position>([](Entity entity, auto& name,
-                                     auto& position) {
-    std::cout << entity.Handle().id << ": " << name.name << ", " << position.x
-              << ", " << position.y << ", " << position.z << "\n";
-  });
+  manager.ForEach<Name, Position>(
+      [](Entity entity, auto& name, auto& position) {
+        std::cout << entity.Id() << ": " << name.name << ", " << position.x
+                  << ", " << position.y << ", " << position.z << "\n";
+      });
   std::cout << "\n";
 }

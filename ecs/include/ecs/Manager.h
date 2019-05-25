@@ -2,8 +2,6 @@
 
 #include <queue>
 #include <tuple>
-#include <type_traits>
-#include <utility>
 #include <vector>
 #include "ComponentStorage.h"
 #include "Entity.h"
@@ -33,7 +31,7 @@ class Manager {
 
  private:
   // Handle generation.
-  std::queue<HandleType> free_indices_;
+  std::queue<Entity::HandleType> free_indices_;
   std::vector<uint8_t> generations_;
 
   // Components.
