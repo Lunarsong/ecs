@@ -2,6 +2,7 @@
 
 #include <queue>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 #include "ComponentStorage.h"
 #include "Entity.h"
