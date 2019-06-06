@@ -29,6 +29,11 @@ class Manager {
   template <typename... Components, typename Fn,
             typename std::enable_if<1 != sizeof...(Components), int>::type = 0>
   void ForEach(Fn fn);
+  template <typename Component, typename Fn>
+  void ForEach(const Entity* entities, size_t num, Fn fn);
+  template <typename... Components, typename Fn,
+            typename std::enable_if<1 != sizeof...(Components), int>::type = 0>
+  void ForEach(const Entity* entities, size_t num, Fn fn);
 
  private:
   // Handle generation.
@@ -154,18 +159,18 @@ void Manager::ForEach(Fn fn) {
 
   // Helper lambda to expand tuple variables.
   auto iter_impl = [&](Entity e) {
-    auto entities = std::make_tuple(GetPool<Components>()->Get(e)...);
+    auto components = std::make_tuple(GetPool<Components>()->Get(e)...);
 
     // Verify all components are present.
     bool has_all_components = true;
     int component_missing_expansion[] = {
-        (IsComponentMissingHelper<Components>(entities, has_all_components),
+        (IsComponentMissingHelper<Components>(components, has_all_components),
          0)...};
     (void)component_missing_expansion;
 
     // Invoke user function.
     if (has_all_components) {
-      apply_from_tuple(e, fn, entities);
+      apply_from_tuple(e, fn, components);
     }
   };
 
@@ -173,6 +178,42 @@ void Manager::ForEach(Fn fn) {
   int iterate_expansion[] = {
       (IterateHelper<Components>(storages, iter_impl, ptr), 0)...};
   (void)iterate_expansion;
+}
+
+template <typename Component, typename Fn>
+void Manager::ForEach(const Entity* entities, size_t num, Fn fn) {
+  auto& pool = *GetPool<Component>();
+  for (size_t i = 0; i < num; ++i) {
+    Entity entity = entities[i];
+    Component* component = pool.Get(entity);
+    assert(component);
+    fn(entity, *component);
+  }
+}
+
+template <typename... Components, typename Fn,
+          typename std::enable_if<1 != sizeof...(Components), int>::type>
+void Manager::ForEach(const Entity* entities, size_t num, Fn fn) {
+  // Create a tuple containing the component storage(s) of the requested
+  // components.
+  auto storages = std::make_tuple(GetPool<Components>()...);
+
+  for (size_t i = 0; i < num; ++i) {
+    Entity e = entities[i];
+    auto components = std::make_tuple(GetPool<Components>()->Get(e)...);
+
+    // Verify all components are present.
+    bool has_all_components = true;
+    int component_missing_expansion[] = {
+        (IsComponentMissingHelper<Components>(components, has_all_components),
+         0)...};
+    (void)component_missing_expansion;
+
+    // Invoke user function.
+    if (has_all_components) {
+      apply_from_tuple(e, fn, components);
+    }
+  }
 }
 
 }  // namespace ecs
